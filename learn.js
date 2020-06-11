@@ -44,6 +44,8 @@ const { ML } = require('./lib.js');
 	let layers = [
 		new Array(10).fill(0),
 		new Array(10).fill(0),
+		new Array(10).fill(0),
+		new Array(10).fill(0),
 		// new Array(5).fill(0),
 		// new Array(5).fill(0),
 	];
@@ -59,7 +61,7 @@ const { ML } = require('./lib.js');
 	predictor.train({
 		data: trainingSet,
 		predictor,
-		steps: 10,
+		epochs: 100,
 	});
 
 	let weightsData = 'module.exports = ' + JSON.stringify({
@@ -73,7 +75,7 @@ const { ML } = require('./lib.js');
 		console.log(output, predictor.predict(input));
 	});
 
-	fs.writeFile('./weights.js', weightsData, () => {
+	fs.writeFile('./data/weights.js', weightsData, () => {
 		console.log(`DONE`);
 	});
 })();

@@ -131,7 +131,7 @@ const
 
 		_createBiases(layers) {
 			let biases = [];
-			let rand = () => Math.random() * 2 - 1;
+			let rand = () => Math.random();
 
 			for (let i = 0; i < layers.length - 1; i++)
 				biases[i] = (new Array(layers[i + 1].length)).fill(1).map(() => rand());
@@ -181,7 +181,7 @@ const
 						this.layers[i] = vec;
 
 						net = multiplyMatrixVector(matrix, vec);
-						net = sumVectorVector(net, biases);
+						// net = sumVectorVector(net, biases);
 						vec = net.map(activationFunction);
 
 						this.netInputs[i + 1] = net;
@@ -202,7 +202,12 @@ const
 					let actFunc     = this.activationFunction;
 					let errFunc     = this.errorFunction;
 
-					let getLearningRate = () => learningRate;
+					let getLearningRate = (epoch) => {
+						let r = 10;
+						let d = 0.5;
+
+						return learningRate * Math.pow(d, Math.floor((1 + epoch) / r));
+					};
 
 					for (let epoch = 0; epoch < epochs; epoch++) {
 						data = arrayShuffle(data);
@@ -262,7 +267,7 @@ const
 										weightsMatrix[i][j] = weightsMatrix[i][j] + dw;
 									}
 
-									biasesMatrix[i] += -_learningRate * predictor.delta[v][i];
+									// biasesMatrix[i] += -_learningRate * predictor.delta[v][i];
 								}
 							}
 

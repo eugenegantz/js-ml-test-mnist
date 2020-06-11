@@ -21,10 +21,9 @@ const mnist = require('mnist');
 		new Array(28 * 28),
 		new Array(512),
 		new Array(128),
+		new Array(32),
 		[0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
 	];
-
-	console.log(trainingSet[0].input.length);
 
 	let predictor = ML.createPredictor({
 		layers                  : layers,
@@ -36,8 +35,8 @@ const mnist = require('mnist');
 
 	predictor.train({
 		data                    : trainingSet,
-		epochs                  : 1,
-		learningRate            : 0.001,
+		epochs                  : 100,
+		learningRate            : 0.0001,
 	});
 
 	let weightsData = 'module.exports = ' + JSON.stringify({
@@ -52,7 +51,7 @@ const mnist = require('mnist');
 		console.log(output, predictor.predict(input));
 	});
 
-	fs.writeFile('./weights.js', weightsData, () => {
+	fs.writeFile('./data/weights.js', weightsData, () => {
 		console.log(`DONE`);
 	});
 })();
