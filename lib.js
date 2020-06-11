@@ -1,43 +1,109 @@
 'use strict';
 
+
+function sigmoid(x) {
+	return 1 / (1 + Math.pow(Math.E, -x));
+}
+
+sigmoid.derivative = function(x) {
+	return sigmoid(x) * (1 - sigmoid(x));
+};
+
+
+// ------------
+
+
+function relu(x) {
+	return x <= 0 ? 0 : x;
+}
+
+relu.derivative = function(x) {
+	return x <= 0 ? 0 : 1;
+};
+
+
+// ------------
+
+
+function relusig(x) {
+	return x <= 0 ? 0 : sigmoid(x);
+}
+
+relusig.derivative = function(x) {
+	return x <= 0 ? 0 : sigmoid.derivative(x);
+};
+
+
+// ------------
+
+
+function quadraticAverage(t, y) {
+	return 0.5 * ((t - y) ** 2);
+}
+
+quadraticAverage.derivative = function(t, y) {
+	return y - t;
+};
+
+
+function _avgQuad(output, target) {
+	let sum = 0;
+
+	for (let i = 0; i < output.length; i++)
+		sum += Math.pow(target[i] - output[i], 2);
+
+	return sum / output.length;
+}
+
+
+// ------------
+
+
+function arrayShuffle(arr) {
+	return arr.sort(() => Math.round(Math.random()) ? -1 : 1);
+}
+
+
+// ------------
+
+
+function multiplyMatrixVector(matrix, vector) {
+	let res = [];
+
+	for (let i = 0, len1 = matrix.length; i < len1; i++) {
+		res[i] = 0;
+
+		for (let j = 0, len2 = matrix[i].length; j < len2; j++)
+			res[i] += matrix[i][j] * vector[j];
+	}
+
+	return res;
+}
+
+
+function sumVectorVector(vec1, vec2) {
+	let vec = [];
+
+	for (let i = 0, len = vec1.length; i < len; i++)
+		vec[i] = vec1[i] + vec2[i];
+
+	return vec;
+}
+
+
+
 const
 	ML = {
 
-		matrix: {
-			multiplyMatrixVector(matrix, vector) {
-				let res = [];
-
-				for (let i = 0; i < matrix.length; i++) {
-					res[i] = 0;
-
-					for (let j = 0; j < matrix[i].length; j++)
-						res[i] += matrix[i][j] * vector[j];
-				}
-
-				return res;
-			},
+		activationFunctions: {
+			sigmoid,
+			relu,
+			relusig,
 		},
 
 
-		/**
-		 * Логистическая функция. Сигмоида
-		 *
-		 * @param {Number} x
-		 *
-		 * @return {Number} -> от 0 до 1
-		 * */
-		sigmoid(x) {
-			return 1 / (1 + Math.pow(Math.E, -x));
-		},
-
-
-		sigmoidVector(arr) {
-			let res = [];
-
-			for (let i = 0; i < arr.length; i++)
-				res[i] = ML.sigmoid(arr[i]);
-
-			return res;
+		errorFunctions: {
+			quadraticAverage,
 		},
 
 
@@ -46,7 +112,9 @@ const
 
 			// Важно. Иначе сеть не обучается
 			let randWeight = (layer) => {
-				return this.sigmoid(6 - Math.random() * 12) * (layer + 1);
+				// return sigmoid(6 - Math.random() * 12) * (layer + 1);
+
+				return Math.random() * 2 - 1;
 			};
 
 			for (let i = 0; i < layers.length - 1; i++) {
@@ -61,110 +129,150 @@ const
 		},
 
 
-		/**
-		 * Создать сеть
-		 *
-		 * @param {Object} args
-		 * @param {Array} args.layers
-		 * @param {Array} args.weights
-		 *
-		 * @return {Object}
-		 * */
-		createPredictor(args) {
-			let { weights, layers } = args;
+		_createBiases(layers) {
+			let biases = [];
+			let rand = () => Math.random() * 2 - 1;
+
+			for (let i = 0; i < layers.length - 1; i++)
+				biases[i] = (new Array(layers[i + 1].length)).fill(1).map(() => rand());
+
+			return biases;
+		},
+
+
+		createPredictor(arg) {
+			let {
+				weights,
+				biases,
+				layers,
+				activationFunction,
+				errorFunction,
+			} = arg;
 
 			if (!weights && layers)
 				weights = this._createWeights(layers);
 
+			if (!biases && layers)
+				biases = this._createBiases(layers);
+
+			let netInputs = [];
+
 			return {
+				netInputs,
+
 				layers,
+
 				weights,
+
+				biases,
+
+				activationFunction,
+
+				errorFunction,
+
 				predict(vec) {
+					let { activationFunction } = this;
+
 					for (let i = 0; i < this.weights.length; i++) {
+						let net;
 						let matrix = this.weights[i];
+						let biases = this.biases[i];
 
 						this.layers[i] = vec;
 
-						vec = ML.sigmoidVector(ML.matrix.multiplyMatrixVector(matrix, vec));
+						net = multiplyMatrixVector(matrix, vec);
+						net = sumVectorVector(net, biases);
+						vec = net.map(activationFunction);
 
+						this.netInputs[i + 1] = net;
 						this.layers[i + 1] = vec;
 					}
 
 					return vec;
 				},
-			};
-		},
 
+				train(arg) {
+					let {
+						learningRate = 1,
+						data,
+						epochs = 1,
+					} = arg;
 
-		/**
-		 * Обучить сеть
-		 *
-		 * @param {Object} arg
-		 * @param {Array} arg.data - данные для обучения
-		 * @param {Array} arg.predictor - сеть
-		 * @param {Array} arg.target - целевые узлы
-		 * @param {Number=1} arg.learningRate - коэф. скорости движения градиента
-		 * @param {Number=1} arg.steps - количество повторов на каждый образец
-		 *
-		 * @return {Array}
-		 * */
-		train(arg) {
-			let {
-				learningRate = 1,
-				predictor,
-				data,
-				steps = 1,
-			} = arg;
+					let predictor   = this;
+					let actFunc     = this.activationFunction;
+					let errFunc     = this.errorFunction;
 
-			for (let _data of data) {
-				for (let step = 0; step < steps; step++) {
-					predictor.predict(_data.input);
+					let getLearningRate = () => learningRate;
 
-					predictor.delta = [];
+					for (let epoch = 0; epoch < epochs; epoch++) {
+						data = arrayShuffle(data);
 
-					let target = _data.output;
-					let { layers, weights } = predictor;
+						for (let d = 0; d < data.length; d++) {
+							let _data = data[d];
 
-					// Обход каждого слоя в направлении обратном импульсу
-					for (let v = layers.length - 1; v > 0; v--) {
-						let input               = layers[v - 1];
-						let output              = layers[v];
-						let weightsMatrix       = weights[v - 1];
-						let isInnerLayer        = v !== layers.length - 1;
+							predictor.predict(_data.input);
 
-						predictor.delta[v]      = [];
+							predictor.delta = [];
 
-						// Рассчет малых дельт (дельты выхода)
-						for (let j = 0; j < output.length; j++) {
-							// Для скрытых слоев
-							if (isInnerLayer) {
-								let _sum = 0;
+							let target = _data.output;
+							let { layers, weights, netInputs, biases } = predictor;
+							let output = layers[layers.length - 1];
 
-								for (let k = 0; k < weights[v].length; k++)
-									_sum += weights[v][k][j] * predictor.delta[v + 1][k];
+							let precision = Math.abs(1 - _avgQuad(output, target));
 
-								predictor.delta[v][j] = _sum * (output[j] * (1 - output[j]));
+							// if (precision >= 0.95 && step)
+							// break;
+
+							// Обход каждого слоя в направлении обратном импульсу
+							for (let v = layers.length - 1; v > 0; v--) {
+								let netInput            = netInputs[v];
+								let input               = layers[v - 1];
+								let output              = layers[v];
+								let weightsMatrix       = weights[v - 1];
+								let biasesMatrix        = biases[v - 1];
+								let isInnerLayer        = v !== layers.length - 1;
+
+								predictor.delta[v]      = [];
+
+								// Рассчет малых дельт (дельты выхода)
+								for (let j = 0; j < output.length; j++) {
+									// Для скрытых слоев
+									if (isInnerLayer) {
+										let _sum = 0;
+
+										for (let k = 0; k < weights[v].length; k++)
+											_sum += weights[v][k][j] * predictor.delta[v + 1][k];
+
+										predictor.delta[v][j] = _sum * actFunc.derivative(netInput[j]);
+									}
+
+									// Для последнего слоя
+									else {
+										predictor.delta[v][j] = errFunc.derivative(target[j], output[j]) * actFunc.derivative(netInput[j]);
+									}
+								}
+
+								let _learningRate = getLearningRate(epoch);
+
+								// Пересчет весов
+								for (let i = 0; i < weightsMatrix.length; i++) {
+									for (let j = 0; j < weightsMatrix[i].length; j++) {
+										let dw = -_learningRate * input[j] * predictor.delta[v][i];
+
+										weightsMatrix[i][j] = weightsMatrix[i][j] + dw;
+									}
+
+									biasesMatrix[i] += -_learningRate * predictor.delta[v][i];
+								}
 							}
 
-							// Для последнего слоя
-							else {
-								predictor.delta[v][j] = (output[j] - target[j]) * (output[j] * (1 - output[j]));
-							}
-						}
-
-						// Пересчет весов
-						for (let i = 0; i < weightsMatrix.length; i++) {
-							for (let j = 0; j < weightsMatrix[i].length; j++) {
-								let dw = -learningRate * input[j] * predictor.delta[v][i];
-
-								weightsMatrix[i][j] = weightsMatrix[i][j] + dw;
-							}
+							console.log(`data: ${d + 1} of ${data.length}, epochs: ${epoch + 1} of ${epochs}, precision: ${precision}`)
 						}
 					}
-				}
-			}
 
-			return predictor;
+					return predictor;
+				},
+			};
 		},
 
 	};

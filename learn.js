@@ -4,7 +4,7 @@ const fs = require('fs');
 const { ML } = require('./lib.js');
 
 (async function main() {
-	function createSetArray({ length }) {
+	function createSetArray1({ length }) {
 		let _set = [];
 		let p = 0;
 
@@ -22,27 +22,44 @@ const { ML } = require('./lib.js');
 		return _set;
 	}
 
+	function createSetArray2({ length }) {
+		let _set = [];
+
+		for (let i = 0; i < length; i++) {
+			let row = new Array(10).fill(1).map(() => Math.round(Math.random()));
+
+			_set.push({ input: row, output: row });
+		}
+
+		return _set;
+	}
+
 	function arrayShuffle(arr) {
 		return arr.sort(() => Math.round(Math.random()) ? -1 : 1);
 	}
 
-	let trainingSet = arrayShuffle(createSetArray({ length: 8000 }));
-	let testSet = createSetArray({ length: 5 });
+	let trainingSet = arrayShuffle(createSetArray2({ length: 8000 }));
+	let testSet = createSetArray2({ length: 5 });
 
 	let layers = [
-		new Array(5).fill(0),
-		new Array(5).fill(0),
-		new Array(5).fill(0),
+		new Array(10).fill(0),
+		new Array(10).fill(0),
+		// new Array(5).fill(0),
+		// new Array(5).fill(0),
 	];
 
-	let predictor = ML.createPredictor({ layers });
+	let predictor = ML.createPredictor({
+		layers                  : layers,
+		activationFunction      : ML.activationFunctions.sigmoid,
+		errorFunction           : ML.errorFunctions.quadraticAverage,
+	});
 
 	debugger;
 
-	predictor = ML.train({
+	predictor.train({
 		data: trainingSet,
 		predictor,
-		steps: 1,
+		steps: 10,
 	});
 
 	let weightsData = 'module.exports = ' + JSON.stringify({
