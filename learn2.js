@@ -19,9 +19,8 @@ const mnist = require('mnist');
 
 	let layers = [
 		new Array(28 * 28),
-		new Array(512),
-		new Array(128),
-		new Array(32),
+		new Array(320),
+		new Array(30),
 		[0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
 	];
 

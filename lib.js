@@ -59,6 +59,24 @@ function _avgQuad(output, target) {
 // ------------
 
 
+function _maxComparison(output, target) {
+	let max = { i: 0, v: -Infinity };
+
+	for (let i = 0; i < output.length; i++) {
+		if (output[i] > max.v) {
+			max.v = output[i];
+			max.i = i;
+			max.t = target[i];
+		}
+	}
+
+	return max;
+}
+
+
+// ------------
+
+
 function arrayShuffle(arr) {
 	return arr.sort(() => Math.round(Math.random()) ? -1 : 1);
 }
@@ -91,6 +109,10 @@ function sumVectorVector(vec1, vec2) {
 }
 
 
+function randomRange(from, to) {
+	return from + Math.round(Math.random() * (to - from));
+}
+
 
 const
 	ML = {
@@ -109,12 +131,35 @@ const
 
 		_createWeights(layers) {
 			let weights = [];
+			let range = 1 / layers.length;
 
 			// Важно. Иначе сеть не обучается
 			let randWeight = (layer) => {
-				// return sigmoid(6 - Math.random() * 12) * (layer + 1);
+				let rand;
+				let type = 'elco';
 
-				return Math.random() * 2 - 1;
+				if ('sigmoid' === type) {
+					rand = sigmoid(6 - Math.random() * 12) * (layer + 1);
+				}
+
+				else if ('range' === type) {
+					let from    = range * layer * 100;
+					let to      = range * (layer + 1) * 100;
+
+					rand        = randomRange(from, to) / 100;
+					rand        = +rand.toFixed(6);
+				}
+
+				else if ('elco' === type) {
+					rand = Math.random() * 2 - 1;
+
+				} else {
+					rand = Math.random();
+				}
+
+				console.log(rand, layer);
+
+				return rand;
 			};
 
 			for (let i = 0; i < layers.length - 1; i++) {
@@ -131,7 +176,7 @@ const
 
 		_createBiases(layers) {
 			let biases = [];
-			let rand = () => Math.random();
+			let rand = () => Math.random() * 2 - 1;
 
 			for (let i = 0; i < layers.length - 1; i++)
 				biases[i] = (new Array(layers[i + 1].length)).fill(1).map(() => rand());
@@ -181,7 +226,7 @@ const
 						this.layers[i] = vec;
 
 						net = multiplyMatrixVector(matrix, vec);
-						// net = sumVectorVector(net, biases);
+						net = sumVectorVector(net, biases);
 						vec = net.map(activationFunction);
 
 						this.netInputs[i + 1] = net;
@@ -198,19 +243,30 @@ const
 						epochs = 1,
 					} = arg;
 
+					let d0 = new Date();
+
 					let predictor   = this;
 					let actFunc     = this.activationFunction;
 					let errFunc     = this.errorFunction;
 
 					let getLearningRate = (epoch) => {
+						return learningRate;
+
+						/*
 						let r = 10;
 						let d = 0.5;
 
 						return learningRate * Math.pow(d, Math.floor((1 + epoch) / r));
+						*/
 					};
 
 					for (let epoch = 0; epoch < epochs; epoch++) {
 						data = arrayShuffle(data);
+
+						let _log = {
+							totalIterations: 0,
+							successIterations: 0,
+						};
 
 						for (let d = 0; d < data.length; d++) {
 							let _data = data[d];
@@ -224,6 +280,12 @@ const
 							let output = layers[layers.length - 1];
 
 							let precision = Math.abs(1 - _avgQuad(output, target));
+							let _maxComp = _maxComparison(output, target);
+
+							_log.totalIterations++;
+
+							if (_maxComp.t)
+								_log.successIterations++;
 
 							// if (precision >= 0.95 && step)
 							// break;
@@ -267,13 +329,17 @@ const
 										weightsMatrix[i][j] = weightsMatrix[i][j] + dw;
 									}
 
-									// biasesMatrix[i] += -_learningRate * predictor.delta[v][i];
+									biasesMatrix[i] += -_learningRate * predictor.delta[v][i];
 								}
 							}
 
-							console.log(`data: ${d + 1} of ${data.length}, epochs: ${epoch + 1} of ${epochs}, precision: ${precision}`)
+							console.log(`data: ${d + 1} of ${data.length},\tepochs: ${epoch + 1} of ${epochs},\tq_avg: ${precision},\ts:${_log.successIterations / _log.totalIterations}\tm: [${_maxComp.i}, ${_maxComp.v}, ${_maxComp.t}]`)
 						}
 					}
+
+					let d1 = new Date();
+
+					console.log(`time: ${d1 - d0}`);
 
 					return predictor;
 				},

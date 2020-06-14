@@ -38,14 +38,14 @@ const { ML } = require('./lib.js');
 		return arr.sort(() => Math.round(Math.random()) ? -1 : 1);
 	}
 
-	let trainingSet = arrayShuffle(createSetArray2({ length: 8000 }));
+	let trainingSet = arrayShuffle(createSetArray2({ length: 60000 }));
 	let testSet = createSetArray2({ length: 5 });
 
 	let layers = [
-		new Array(10).fill(0),
-		new Array(10).fill(0),
-		new Array(10).fill(0),
-		new Array(10).fill(0),
+		new Array(5).fill(0),
+		new Array(5).fill(0),
+		// new Array(2).fill(0),
+		new Array(5).fill(0),
 		// new Array(5).fill(0),
 		// new Array(5).fill(0),
 	];
@@ -62,6 +62,7 @@ const { ML } = require('./lib.js');
 		data: trainingSet,
 		predictor,
 		epochs: 100,
+		learningRate: 0.0001,
 	});
 
 	let weightsData = 'module.exports = ' + JSON.stringify({
