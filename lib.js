@@ -9,34 +9,6 @@ sigmoid.derivative = function(x) {
 	return sigmoid(x) * (1 - sigmoid(x));
 };
 
-
-// ------------
-
-
-function relu(x) {
-	return x <= 0 ? 0 : x;
-}
-
-relu.derivative = function(x) {
-	return x <= 0 ? 0 : 1;
-};
-
-
-// ------------
-
-
-function relusig(x) {
-	return x <= 0 ? 0 : sigmoid(x);
-}
-
-relusig.derivative = function(x) {
-	return x <= 0 ? 0 : sigmoid.derivative(x);
-};
-
-
-// ------------
-
-
 function quadraticAverage(t, y) {
 	return 0.5 * ((t - y) ** 2);
 }
@@ -119,8 +91,6 @@ const
 
 		activationFunctions: {
 			sigmoid,
-			relu,
-			relusig,
 		},
 
 
@@ -131,43 +101,16 @@ const
 
 		_createWeights(layers) {
 			let weights = [];
-			let range = 1 / layers.length;
 
 			// Важно. Иначе сеть не обучается
-			let randWeight = (layer) => {
-				let rand;
-				let type = 'elco';
-
-				if ('sigmoid' === type) {
-					rand = sigmoid(6 - Math.random() * 12) * (layer + 1);
-				}
-
-				else if ('range' === type) {
-					let from    = range * layer * 100;
-					let to      = range * (layer + 1) * 100;
-
-					rand        = randomRange(from, to) / 100;
-					rand        = +rand.toFixed(6);
-				}
-
-				else if ('elco' === type) {
-					rand = Math.random() * 2 - 1;
-
-				} else {
-					rand = Math.random();
-				}
-
-				console.log(rand, layer);
-
-				return rand;
-			};
+			let rand = () => Math.random() * 2 - 1;
 
 			for (let i = 0; i < layers.length - 1; i++) {
 				let layer0 = layers[i];
 				let layer1 = layers[i + 1];
 
 				weights[i] = (new Array(layer1.length)).fill(1);
-				weights[i] = weights[i].map(() => (new Array(layer0.length)).fill(randWeight(i)));
+				weights[i] = weights[i].map(() => (new Array(layer0.length)).fill(rand(i)));
 			}
 
 			return weights;
@@ -333,7 +276,13 @@ const
 								}
 							}
 
-							console.log(`data: ${d + 1} of ${data.length},\tepochs: ${epoch + 1} of ${epochs},\tq_avg: ${precision},\ts:${_log.successIterations / _log.totalIterations}\tm: [${_maxComp.i}, ${_maxComp.v}, ${_maxComp.t}]`)
+							console.log(''
+								+ `data: ${d + 1} of ${data.length},`
+								+ `\tepochs: ${epoch + 1} of ${epochs},`
+								+ `\tq_avg: ${precision},`
+								+ `\ts:${_log.successIterations / _log.totalIterations}`
+								+ `\tm: [${_maxComp.i}, ${_maxComp.v}, ${_maxComp.t}]`
+							)
 						}
 					}
 
