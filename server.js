@@ -1,16 +1,28 @@
 'use strict';
 
+import _fs from 'fs';
+import _http from 'http';
+import _path from 'path';
+import _url from 'url';
+
 const
 	MODULES = {
-		fs      : require('fs'),
-		http    : require('http'),
-		path    : require('path'),
+		fs      : _fs,
+		http    : _http,
+		path    : _path,
+		url     : _url,
 	};
+
+const __dirname = MODULES.path.dirname(MODULES.url.fileURLToPath(import.meta.url));
+
+console.log(`__dirname = ` + __dirname);
 
 MODULES.http.createServer((req, res) => {
 	let path = req.url.split('?')[0];
 
 	path = MODULES.path.join(__dirname, path);
+
+	console.log(path, __dirname, path);
 
 	let ext = MODULES.path.extname(path).toLowerCase();
 

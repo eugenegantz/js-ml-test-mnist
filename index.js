@@ -1,38 +1,12 @@
 'use strict';
 
-export { ML } from './lib.js';
+import ML from './lib/ml.js'
+import layers from './data/predictor-state.js';
 
 document.addEventListener('DOMContentLoaded', () => {
 	globalThis.ML = ML;
 
-	// Слой 1. 10 узлов ввода
-	// Слой 2. 5 узлов скрытых
-	// Слой 3. 8 узлов вывода
-	/*
-	let network = [
-		// Веса для первого слоя
-		[
-			[0.5, 2, 0, 2, 0, 0.2, 0, 0, 0, 0],
-			[0, 0, 0, 0.2, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0.1, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-		],
-
-		// Веса для второго слоя
-		[
-			[0.5, 0, 0, 0, 0,],
-			[0, 0, 0.3, 0, 0,],
-			[0, 0, 0, 0, 0,],
-			[0, 0, 0, 0, 0,],
-			[0, 0, 0, 0, 0,],
-			[0, 0, 0, 0, 0,],
-			[0, 0, 0, 0, 0,],
-			[0, 0, 0, 0, 0,],
-		],
-	];
-	*/
-
+	let predictor;
 	let elemCanvas  = document.querySelector('canvas');
 	let ctx         = elemCanvas.getContext('2d');
 	let drawing     = 0;
@@ -47,15 +21,33 @@ document.addEventListener('DOMContentLoaded', () => {
 		ctx.rect(e.offsetX / 10, e.offsetY / 10, 2, 2);
 		ctx.fill();
 
-		// console.log(e);
-	});
+		let imageData = ctx.getImageData(0, 0, 28, 28);
+		let vec = [];
+		let row = [];
 
-	globalThis.predictor = ML.createPredictor({
-		layers: [
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-			[0, 0, 0, 0, 0,],
-			[0, 0,],
-			[0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-		],
+		for (let v = 0, i = 0; i < imageData.data.length; i++) {
+			row.push(imageData.data[i] / 255);
+
+			if (row.length === 4) {
+				vec.push(row[3]);
+				row.splice(0, 99);
+			}
+		}
+
+		let res = predictor.predict(vec);
+		let max = Math.max(...res);
+
+		console.clear();
+		console.log(max, res.indexOf(max));
+	});
+	
+	document.querySelector('#clear-canvas').addEventListener('click', () => {
+		ctx.clearRect(0, 0, elemCanvas.width, elemCanvas.height);
+	}, false);
+
+	globalThis.predictor = predictor = new ML.Predictor({
+		activationFunction      : ML.activationFunctions.sigmoid,
+		errorFunction           : ML.errorFunctions.quadraticAverage,
+		layers                  : layers,
 	});
 });
