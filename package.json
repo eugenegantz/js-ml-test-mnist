@@ -1,1 +1,24 @@
-{ "type": "module" }
+{
+  "name": "js-ml-test-mnist",
+  "version": "1.0.0",
+  "description": "Движок и модель классификатора для обучения библиотеки mnist на javascript",
+  "main": "train.js",
+  "type": "module",
+  "directories": {
+    "lib": "lib"
+  },
+  "dependencies": {
+    "idx-data": "^1.1.0"
+  },
+  "scripts": {
+    "train": "train.js",
+    "start": "node server.js"
+  },
+  "keywords": [
+    "mnist",
+    "test",
+    "javascript"
+  ],
+  "author": "eg <eugengantz@gmail.com> (http://eugenegantz.ru)",
+  "license": "ISC"
+}

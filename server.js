@@ -15,18 +15,19 @@ const
 
 const __dirname = MODULES.path.dirname(MODULES.url.fileURLToPath(import.meta.url));
 
-console.log(`__dirname = ` + __dirname);
+console.log('server: http://localhost:8080');
 
 MODULES.http.createServer((req, res) => {
 	let path = req.url.split('?')[0];
 
-	path = MODULES.path.join(__dirname, path);
+	if (!path || path === '/')
+		path = 'index.html';
 
-	console.log(path, __dirname, path);
+	path = MODULES.path.join(__dirname, path);
 
 	let ext = MODULES.path.extname(path).toLowerCase();
 
-	MODULES.fs.readFile(path, (err,data) => {
+	MODULES.fs.readFile(path, (err, data) => {
 		if (err) {
 			res.writeHead(404);
 			res.end(JSON.stringify(err));
